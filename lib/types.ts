@@ -1,7 +1,27 @@
 export type Stage = "non-commercial" | "early" | "late";
 
-export type MacroBucket = "reactor" | "fuel" | "plant";
+export type EnergyType =
+  | "nuclear"
+  | "solar"
+  | "wind"
+  | "hydro"
+  | "geothermal"
+  | "storage"
+  | "hydrogen";
 
+export type Maturity =
+  | "rnd"
+  | "pilot"
+  | "first-commercial"
+  | "mass-deployed";
+
+export type Customer =
+  | "government"
+  | "utility"
+  | "industrial"
+  | "consumer";
+
+// nuclear-specific. left here for typing, but only meaningful for energyType === 'nuclear'.
 export type Domain = "fission" | "fusion";
 
 export type CompanyType =
@@ -22,6 +42,7 @@ export type Region =
   | "japan"
   | "other";
 
+// nuclear-specific.
 export type ReactorType =
   | "lwr"
   | "htgr"
@@ -43,85 +64,36 @@ export interface Company {
   name: string;
   url: string;
   logoUrl: string;
-  bucket: MacroBucket;
+  energyType: EnergyType;
+  bucket: string;
   subsector: string;
   stage: Stage;
   types: CompanyType[];
-  domain: Domain;
   region: Region;
+  description: string;
+  // optional / context-dependent
+  domain?: Domain;
   reactorType?: ReactorType;
+  maturity?: Maturity;
+  customer?: Customer;
   funding?: Funding;
   badge?: string;
-  description: string;
 }
 
 export interface BucketDef {
-  id: MacroBucket;
+  id: string;
   label: string;
   blurb: string;
   subsectors: string[];
 }
-
-export const BUCKETS: BucketDef[] = [
-  {
-    id: "reactor",
-    label: "The Reactor",
-    blurb: "The technology that makes the power.",
-    subsectors: [
-      "Fission — Large (Gen III+ / Gen IV)",
-      "Fission — SMR",
-      "Fission — Microreactor",
-      "Fusion — Magnetic confinement",
-      "Fusion — Inertial / alternative",
-    ],
-  },
-  {
-    id: "fuel",
-    label: "The Fuel",
-    blurb: "What feeds the reactor.",
-    subsectors: [
-      "Mining & Conversion",
-      "Enrichment",
-      "Fabrication (HALEU, TRISO, MOX)",
-      "Recycling & Waste",
-    ],
-  },
-  {
-    id: "plant",
-    label: "The Plant",
-    blurb: "What makes it operate.",
-    subsectors: [
-      "Materials & Components",
-      "Instrumentation & Robotics",
-      "Simulation & Digital",
-      "Services & EPC",
-    ],
-  },
-];
-
-export const STAGES: { id: Stage; label: string; tagline: string }[] = [
-  {
-    id: "non-commercial",
-    label: "Non-Commercial",
-    tagline: "national labs · academic · open source · big-co R&D",
-  },
-  {
-    id: "early",
-    label: "Early Stage",
-    tagline: "seed through Series B · roughly < $100M raised",
-  },
-  {
-    id: "late",
-    label: "Late Stage",
-    tagline: "Series C+ · public · mature incumbents",
-  },
-];
 
 export interface ActiveFilters {
   types: CompanyType[];
   domains: Domain[];
   regions: Region[];
   reactorTypes: ReactorType[];
+  maturities: Maturity[];
+  customers: Customer[];
 }
 
 export const EMPTY_FILTERS: ActiveFilters = {
@@ -129,4 +101,6 @@ export const EMPTY_FILTERS: ActiveFilters = {
   domains: [],
   regions: [],
   reactorTypes: [],
+  maturities: [],
+  customers: [],
 };

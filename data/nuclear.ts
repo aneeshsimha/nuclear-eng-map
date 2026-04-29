@@ -3,7 +3,7 @@ import type { Company } from "@/lib/types";
 const fav = (domain: string) =>
   `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
 
-export const COMPANIES: Company[] = [
+const NUCLEAR_RAW: Omit<Company, "energyType">[] = [
   // ──────────────────────────── REACTOR ────────────────────────────
   // Fission — Large (Gen III+ / Gen IV)
   {
@@ -975,3 +975,8 @@ export const COMPANIES: Company[] = [
       "Engineering-only firm; reactor-licensing and design-engineering partner across SMR developers and operating utilities.",
   },
 ];
+
+export const NUCLEAR_COMPANIES: Company[] = NUCLEAR_RAW.map((c) => ({
+  ...c,
+  energyType: "nuclear" as const,
+}));

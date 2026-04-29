@@ -3,7 +3,9 @@ import type { CompanyResearch } from "@/lib/ai/schema";
 import { insertCompany } from "@/lib/insert";
 import type { Company } from "@/lib/types";
 
-const COMPANIES_PATH = "data/companies.ts";
+function pathFor(energyType: CompanyResearch["energyType"]): string {
+  return `data/${energyType}.ts`;
+}
 
 export interface PrInput {
   research: CompanyResearch;
@@ -12,7 +14,7 @@ export interface PrInput {
 }
 
 export type PrResult =
-  | { ok: true; prUrl: string; prNumber: number; branch: string }
+  | { ok: true; prUrl: string; prNumber: number; branch: string; path: string }
   | { ok: false; error: string };
 
 export async function openCompanyPr(input: PrInput): Promise<PrResult> {
@@ -25,9 +27,17 @@ export async function openCompanyPr(input: PrInput): Promise<PrResult> {
   }
   const octokit = new Octokit({ auth: token });
   const { research, notes, modelId } = input;
-  const { sources: _sources, ...companyFields } = research;
+  // strip `sources` (PR-body only) and `energyType` (file's .map adds it back).
+  const {
+    sources: _sources,
+    energyType: _energyType,
+    ...companyFields
+  } = research;
   void _sources;
-  const company = companyFields as Company;
+  void _energyType;
+  const company = companyFields as Omit<Company, "energyType"> as Company;
+
+  const filePath = pathFor(research.energyType);
 
   let existing: string;
   let sha: string;
@@ -35,18 +45,18 @@ export async function openCompanyPr(input: PrInput): Promise<PrResult> {
     const file = await octokit.repos.getContent({
       owner,
       repo,
-      path: COMPANIES_PATH,
+      path: filePath,
       ref: baseBranch,
     });
     if (Array.isArray(file.data) || file.data.type !== "file") {
-      return { ok: false, error: `${COMPANIES_PATH} is not a regular file` };
+      return { ok: false, error: `${filePath} is not a regular file` };
     }
     existing = Buffer.from(file.data.content, "base64").toString("utf8");
     sha = file.data.sha;
   } catch (err) {
     return {
       ok: false,
-      error: `read ${COMPANIES_PATH} failed: ${err instanceof Error ? err.message : String(err)}`,
+      error: `read ${filePath} failed: ${err instanceof Error ? err.message : String(err)}`,
     };
   }
 
@@ -78,10 +88,10 @@ export async function openCompanyPr(input: PrInput): Promise<PrResult> {
     await octokit.repos.createOrUpdateFileContents({
       owner,
       repo,
-      path: COMPANIES_PATH,
+      path: filePath,
       branch,
       sha,
-      message: `Add ${research.name} to nuclear map`,
+      message: `Add ${research.name} (${research.energyType})`,
       content: Buffer.from(next, "utf8").toString("base64"),
     });
     const pr = await octokit.pulls.create({
@@ -89,7 +99,7 @@ export async function openCompanyPr(input: PrInput): Promise<PrResult> {
       repo,
       head: branch,
       base: baseBranch,
-      title: `Add ${research.name} to nuclear map`,
+      title: `Add ${research.name} (${research.energyType})`,
       body: renderPrBody(research, notes, modelId),
     });
     return {
@@ -97,6 +107,7 @@ export async function openCompanyPr(input: PrInput): Promise<PrResult> {
       prUrl: pr.data.html_url,
       prNumber: pr.data.number,
       branch,
+      path: filePath,
     };
   } catch (err) {
     return {
@@ -112,12 +123,17 @@ function renderPrBody(
   modelId: string | undefined,
 ): string {
   const lines: (string | null)[] = [
-    "🤖 Auto-drafted by the nuclear-map admin agent. Review the fields below before merging.",
+    "🤖 Auto-drafted by the energy-map admin agent. Review the fields below before merging.",
     "",
     "## Filled fields",
+    `- **Energy:** ${c.energyType}`,
     `- **Bucket:** ${c.bucket} → ${c.subsector}`,
     `- **Stage:** ${c.stage}`,
-    `- **Domain:** ${c.domain}${c.reactorType ? ` (reactor: ${c.reactorType})` : ""}`,
+    c.domain
+      ? `- **Domain:** ${c.domain}${c.reactorType ? ` (reactor: ${c.reactorType})` : ""}`
+      : null,
+    c.maturity ? `- **Maturity:** ${c.maturity}` : null,
+    c.customer ? `- **Customer:** ${c.customer}` : null,
     `- **Region:** ${c.region}`,
     `- **Types:** ${c.types.join(", ")}`,
     c.funding
@@ -131,11 +147,11 @@ function renderPrBody(
     notes ? `\n## Submitter notes\n${notes}` : null,
     "",
     "## Review checklist",
-    "- [ ] Bucket and subsector are correct",
+    "- [ ] Energy type, bucket, and subsector are correct",
     "- [ ] Stage matches public funding info",
     "- [ ] Description is accurate and grounded in the cited sources",
     "- [ ] Logo URL renders",
-    "- [ ] No duplicate slug exists in `data/companies.ts`",
+    `- [ ] No duplicate slug exists in \`data/${c.energyType}.ts\``,
     modelId ? `\n_Model: \`${modelId}\`_` : null,
   ];
   return lines.filter((l): l is string => l !== null).join("\n");

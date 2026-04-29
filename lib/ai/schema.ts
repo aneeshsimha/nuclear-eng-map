@@ -1,7 +1,9 @@
 import { z } from "zod";
-import { BUCKETS } from "@/lib/types";
+import { BUCKETS_BY_ENERGY, ENERGY_TYPES } from "@/lib/energy";
 
-const subsectorIds = BUCKETS.flatMap((b) => b.subsectors);
+const allSubsectors = ENERGY_TYPES.flatMap((e) =>
+  BUCKETS_BY_ENERGY[e].flatMap((b) => b.subsectors),
+);
 
 export const CompanyResearchSchema = z
   .object({
@@ -13,8 +15,17 @@ export const CompanyResearchSchema = z
     name: z.string().min(1),
     url: z.string().url(),
     logoUrl: z.string().url(),
-    bucket: z.enum(["reactor", "fuel", "plant"]),
-    subsector: z.enum(subsectorIds as [string, ...string[]]),
+    energyType: z.enum([
+      "nuclear",
+      "solar",
+      "wind",
+      "hydro",
+      "geothermal",
+      "storage",
+      "hydrogen",
+    ]),
+    bucket: z.string().min(1),
+    subsector: z.enum(allSubsectors as [string, ...string[]]),
     stage: z.enum(["non-commercial", "early", "late"]),
     types: z
       .array(
@@ -28,7 +39,6 @@ export const CompanyResearchSchema = z
         ]),
       )
       .min(1),
-    domain: z.enum(["fission", "fusion"]),
     region: z.enum([
       "us",
       "canada",
@@ -39,8 +49,17 @@ export const CompanyResearchSchema = z
       "japan",
       "other",
     ]),
+    description: z.string().min(50).max(280),
+    sources: z.array(z.string().url()).min(1),
+    domain: z.enum(["fission", "fusion"]).optional(),
     reactorType: z
       .enum(["lwr", "htgr", "sfr", "msr", "smr", "micro", "fusion", "other"])
+      .optional(),
+    maturity: z
+      .enum(["rnd", "pilot", "first-commercial", "mass-deployed"])
+      .optional(),
+    customer: z
+      .enum(["government", "utility", "industrial", "consumer"])
       .optional(),
     funding: z
       .object({
@@ -50,15 +69,22 @@ export const CompanyResearchSchema = z
       })
       .optional(),
     badge: z.string().optional(),
-    description: z.string().min(50).max(280),
-    sources: z.array(z.string().url()).min(1),
   })
   .refine(
     (c) => {
-      const bucket = BUCKETS.find((b) => b.id === c.bucket);
+      const buckets = BUCKETS_BY_ENERGY[c.energyType];
+      const bucket = buckets.find((b) => b.id === c.bucket);
       return bucket?.subsectors.includes(c.subsector) ?? false;
     },
-    { message: "subsector must belong to bucket", path: ["subsector"] },
-  );
+    {
+      message:
+        "(energyType, bucket, subsector) triple must come from the taxonomy",
+      path: ["subsector"],
+    },
+  )
+  .refine((c) => c.energyType !== "nuclear" || !!c.domain, {
+    message: "domain required when energyType === 'nuclear'",
+    path: ["domain"],
+  });
 
 export type CompanyResearch = z.infer<typeof CompanyResearchSchema>;

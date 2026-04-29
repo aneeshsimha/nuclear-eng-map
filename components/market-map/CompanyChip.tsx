@@ -6,6 +6,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { MATURITIES } from "@/lib/energy";
 import type { Company } from "@/lib/types";
 
 const REGION_LABEL: Record<Company["region"], string> = {
@@ -30,6 +31,24 @@ const REACTOR_LABEL: Record<NonNullable<Company["reactorType"]>, string> = {
   other: "Other",
 };
 
+const MATURITY_LABEL: Record<NonNullable<Company["maturity"]>, string> = {
+  rnd: "R&D",
+  pilot: "Pilot",
+  "first-commercial": "First commercial",
+  "mass-deployed": "Mass-deployed",
+};
+
+const CUSTOMER_LABEL: Record<NonNullable<Company["customer"]>, string> = {
+  government: "Government",
+  utility: "Utility",
+  industrial: "Industrial / B2B",
+  consumer: "Consumer",
+};
+
+const MATURITY_DOT = Object.fromEntries(
+  MATURITIES.map((m) => [m.id, m.dot]),
+) as Record<NonNullable<Company["maturity"]>, string>;
+
 interface Props {
   company: Company;
   active: boolean;
@@ -50,6 +69,15 @@ export function CompanyChip({ company, active }: Props) {
               !active && "pointer-events-none opacity-30 grayscale",
             )}
           >
+            {company.maturity && (
+              <span
+                className={cn(
+                  "inline-block h-1.5 w-1.5 shrink-0 rounded-full",
+                  MATURITY_DOT[company.maturity],
+                )}
+                aria-hidden
+              />
+            )}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={company.logoUrl}
@@ -91,6 +119,10 @@ export function CompanyChip({ company, active }: Props) {
             </span>
           </div>
           <p className="text-[11px] leading-snug">{company.description}</p>
+          <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10.5px] text-background/70">
+            {company.maturity && <span>{MATURITY_LABEL[company.maturity]}</span>}
+            {company.customer && <span>· {CUSTOMER_LABEL[company.customer]}</span>}
+          </div>
           {company.funding && (
             <div className="text-[10.5px] text-background/70">
               {company.funding.round && <>{company.funding.round} · </>}

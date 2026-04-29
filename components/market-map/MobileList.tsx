@@ -1,19 +1,20 @@
 "use client";
 
 import { CompanyChip } from "./CompanyChip";
-import { BUCKETS, STAGES, type Company } from "@/lib/types";
+import { STAGES } from "@/lib/energy";
+import type { ActiveFilters, BucketDef, Company } from "@/lib/types";
 import { filterCompany } from "@/lib/filter";
-import type { ActiveFilters } from "@/lib/types";
 
 interface Props {
+  buckets: BucketDef[];
   companies: Company[];
   filters: ActiveFilters;
 }
 
-export function MobileList({ companies, filters }: Props) {
+export function MobileList({ buckets, companies, filters }: Props) {
   return (
     <div className="flex flex-col gap-4 md:hidden">
-      {BUCKETS.map((bucket) => {
+      {buckets.map((bucket) => {
         const inBucket = companies.filter((c) => c.bucket === bucket.id);
         if (inBucket.length === 0) return null;
         return (

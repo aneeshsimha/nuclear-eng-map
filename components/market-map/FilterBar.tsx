@@ -3,12 +3,17 @@
 import { Toggle } from "@/components/ui/toggle";
 import { cn } from "@/lib/utils";
 import {
+  EMPTY_FILTERS,
   type ActiveFilters,
   type CompanyType,
+  type Customer,
   type Domain,
-  type Region,
+  type EnergyType,
+  type Maturity,
   type ReactorType,
+  type Region,
 } from "@/lib/types";
+import { CUSTOMERS, MATURITIES } from "@/lib/energy";
 import { toggleInList } from "@/lib/filter";
 
 const TYPE_OPTIONS: { value: CompanyType; label: string }[] = [
@@ -47,7 +52,16 @@ const REACTOR_OPTIONS: { value: ReactorType; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
+const MATURITY_OPTIONS: { value: Maturity; label: string }[] = MATURITIES.map(
+  (m) => ({ value: m.id, label: m.label }),
+);
+
+const CUSTOMER_OPTIONS: { value: Customer; label: string }[] = CUSTOMERS.map(
+  (c) => ({ value: c.id, label: c.label }),
+);
+
 interface Props {
+  energyType: EnergyType;
   filters: ActiveFilters;
   onChange: (next: ActiveFilters) => void;
   activeCount: number;
@@ -56,12 +70,15 @@ interface Props {
 }
 
 export function FilterBar({
+  energyType,
   filters,
   onChange,
   activeCount,
   total,
   hasFilters,
 }: Props) {
+  const isNuclear = energyType === "nuclear";
+
   return (
     <div className="flex flex-col gap-3 rounded-md border border-border bg-background p-3 sm:p-4">
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
@@ -72,7 +89,7 @@ export function FilterBar({
         {hasFilters && (
           <button
             type="button"
-            onClick={() => onChange({ types: [], domains: [], regions: [], reactorTypes: [] })}
+            onClick={() => onChange(EMPTY_FILTERS)}
             className="text-foreground/70 underline-offset-2 hover:underline"
           >
             Clear filters
@@ -89,11 +106,19 @@ export function FilterBar({
         }
       />
       <FilterRow
-        label="Domain"
-        options={DOMAIN_OPTIONS}
-        active={filters.domains}
+        label="Maturity"
+        options={MATURITY_OPTIONS}
+        active={filters.maturities}
         onToggle={(value) =>
-          onChange({ ...filters, domains: toggleInList(filters.domains, value) })
+          onChange({ ...filters, maturities: toggleInList(filters.maturities, value) })
+        }
+      />
+      <FilterRow
+        label="Customer"
+        options={CUSTOMER_OPTIONS}
+        active={filters.customers}
+        onToggle={(value) =>
+          onChange({ ...filters, customers: toggleInList(filters.customers, value) })
         }
       />
       <FilterRow
@@ -104,17 +129,29 @@ export function FilterBar({
           onChange({ ...filters, regions: toggleInList(filters.regions, value) })
         }
       />
-      <FilterRow
-        label="Reactor"
-        options={REACTOR_OPTIONS}
-        active={filters.reactorTypes}
-        onToggle={(value) =>
-          onChange({
-            ...filters,
-            reactorTypes: toggleInList(filters.reactorTypes, value),
-          })
-        }
-      />
+      {isNuclear && (
+        <>
+          <FilterRow
+            label="Domain"
+            options={DOMAIN_OPTIONS}
+            active={filters.domains}
+            onToggle={(value) =>
+              onChange({ ...filters, domains: toggleInList(filters.domains, value) })
+            }
+          />
+          <FilterRow
+            label="Reactor"
+            options={REACTOR_OPTIONS}
+            active={filters.reactorTypes}
+            onToggle={(value) =>
+              onChange({
+                ...filters,
+                reactorTypes: toggleInList(filters.reactorTypes, value),
+              })
+            }
+          />
+        </>
+      )}
     </div>
   );
 }

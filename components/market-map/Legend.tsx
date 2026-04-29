@@ -1,6 +1,18 @@
+import { MATURITIES } from "@/lib/energy";
+import { cn } from "@/lib/utils";
+
 export function Legend() {
   return (
     <aside className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1 pt-2 text-[11px] text-muted-foreground">
+      {MATURITIES.map((m) => (
+        <span key={m.id} className="inline-flex items-center gap-1.5">
+          <span
+            className={cn("inline-block h-1.5 w-1.5 rounded-full", m.dot)}
+            aria-hidden
+          />
+          {m.label}
+        </span>
+      ))}
       <span className="inline-flex items-center gap-1.5">
         <span className="rounded-sm bg-red-600 px-1 py-px text-[8.5px] font-semibold tracking-wide text-white uppercase">
           Largest round

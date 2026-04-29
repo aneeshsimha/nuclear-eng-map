@@ -1,11 +1,8 @@
-import { generateText, Output, stepCountIs } from "ai";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { generateObject } from "ai";
 import { CompanyResearchSchema, type CompanyResearch } from "./schema";
-import { webSearch, fetchUrl } from "./tools";
 import { RESEARCH_SYSTEM_PROMPT } from "./prompts";
 
-const HF_BASE_URL = "https://router.huggingface.co/v1";
-const DEFAULT_MODEL = "meta-llama/Llama-3.3-70B-Instruct";
+const DEFAULT_MODEL = "perplexity/sonar-pro";
 
 export interface ResearchInput {
   name: string;
@@ -20,43 +17,36 @@ export type ResearchResult =
 export async function researchCompany(
   input: ResearchInput,
 ): Promise<ResearchResult> {
-  const apiKey = process.env.HF_TOKEN;
-  if (!apiKey) return { ok: false, error: "HF_TOKEN not set" };
-  if (!process.env.EXA_API_KEY) return { ok: false, error: "EXA_API_KEY not set" };
+  if (!process.env.AI_GATEWAY_API_KEY && !process.env.VERCEL_OIDC_TOKEN) {
+    return {
+      ok: false,
+      error:
+        "AI_GATEWAY_API_KEY not set (or deploy to Vercel where OIDC token is auto-injected)",
+    };
+  }
 
-  const provider = createOpenAICompatible({
-    name: "huggingface",
-    baseURL: HF_BASE_URL,
-    apiKey,
-  });
-
-  const modelId = process.env.HF_MODEL_ID || DEFAULT_MODEL;
+  const modelId = process.env.AI_MODEL_ID || DEFAULT_MODEL;
 
   const prompt = [
-    "Research this company and produce its profile entry for the nuclear engineering market map.",
+    "Research this company and produce its profile entry for the energy market map.",
     `Name: ${input.name}`,
     input.url ? `Website (caller-provided): ${input.url}` : null,
     input.notes ? `Caller notes: ${input.notes}` : null,
+    "",
+    "Use live web search. Pick the right energyType + bucket + subsector from the taxonomy. Cite your sources.",
   ]
     .filter(Boolean)
     .join("\n");
 
   try {
-    const result = await generateText({
-      model: provider(modelId),
+    const result = await generateObject({
+      model: modelId,
       system: RESEARCH_SYSTEM_PROMPT,
       prompt,
-      tools: { web_search: webSearch, fetch_url: fetchUrl },
-      stopWhen: stepCountIs(8),
-      output: Output.object({ schema: CompanyResearchSchema }),
-      abortSignal: AbortSignal.timeout(270_000),
+      schema: CompanyResearchSchema,
+      abortSignal: AbortSignal.timeout(180_000),
     });
-
-    const out = (result as { output?: unknown }).output;
-    if (!out) {
-      return { ok: false, error: "agent returned no structured output" };
-    }
-    return { ok: true, company: out as CompanyResearch, modelId };
+    return { ok: true, company: result.object, modelId };
   } catch (err) {
     return {
       ok: false,

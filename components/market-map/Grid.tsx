@@ -1,16 +1,17 @@
 "use client";
 
 import { CompanyChip } from "./CompanyChip";
-import { BUCKETS, STAGES, type Company } from "@/lib/types";
+import { STAGES } from "@/lib/energy";
+import type { ActiveFilters, BucketDef, Company } from "@/lib/types";
 import { filterCompany } from "@/lib/filter";
-import type { ActiveFilters } from "@/lib/types";
 
 interface Props {
+  buckets: BucketDef[];
   companies: Company[];
   filters: ActiveFilters;
 }
 
-export function Grid({ companies, filters }: Props) {
+export function Grid({ buckets, companies, filters }: Props) {
   return (
     <div className="hidden md:flex md:flex-col md:divide-y md:divide-border md:border md:border-border md:rounded-md md:bg-background">
       <header className="grid grid-cols-[minmax(220px,260px)_repeat(3,1fr)] divide-x divide-border bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -25,7 +26,7 @@ export function Grid({ companies, filters }: Props) {
         ))}
       </header>
 
-      {BUCKETS.map((bucket) => (
+      {buckets.map((bucket) => (
         <section
           key={bucket.id}
           className="grid grid-cols-[minmax(220px,260px)_repeat(3,1fr)] divide-x divide-border"
@@ -42,7 +43,7 @@ export function Grid({ companies, filters }: Props) {
           {bucket.subsectors.map((subsector) => (
             <SubsectorRow
               key={subsector}
-              bucket={bucket.id}
+              bucketId={bucket.id}
               subsector={subsector}
               companies={companies}
               filters={filters}
@@ -55,18 +56,18 @@ export function Grid({ companies, filters }: Props) {
 }
 
 function SubsectorRow({
-  bucket,
+  bucketId,
   subsector,
   companies,
   filters,
 }: {
-  bucket: Company["bucket"];
+  bucketId: string;
   subsector: string;
   companies: Company[];
   filters: ActiveFilters;
 }) {
   const inRow = companies.filter(
-    (c) => c.bucket === bucket && c.subsector === subsector,
+    (c) => c.bucket === bucketId && c.subsector === subsector,
   );
 
   return (
