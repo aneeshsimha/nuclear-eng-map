@@ -1,0 +1,19 @@
+{
+  "name": "energy-map-pipeline",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "discover": "tsx run-discovery.ts",
+    "enrich": "tsx run-enrichment.ts",
+    "pipeline": "tsx run-pipeline.ts"
+  },
+  "dependencies": {
+    "exa-js": "^1.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "dotenv": "^16.4.5",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
+  }
+}
